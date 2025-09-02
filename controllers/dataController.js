@@ -48,32 +48,33 @@ const dataController = {
 
             res.json({ success: true, records: recordsWithUsers });
         } catch (error) {
-            console.error('Error fetching data records:', error);
-            res.status(500).json({ error: 'Failed to fetch data records' });
+            console.error('Error getting all data:', error);
+            res.status(500).json({ success: false, error: 'Failed to fetch data records' });
         }
     },
 
     createData: async (req, res) => {
         try {
             const { name, aadhaar_number, srn, status = 'Pending', assigned_users = [] } = req.body;
-
-            // Create the data record
-            const newRecord = await dbHelpers.createDataRecord(name, aadhaar_number, srn, status);
-
-            // Assign users if provided
-            if (assigned_users.length > 0) {
-                await dbHelpers.assignRecordToUsers(newRecord.id, assigned_users);
+            
+            if (!name || !aadhaar_number || !srn) {
+                return res.status(400).json({ success: false, error: 'Name, Aadhaar number, and SRN are required' });
             }
 
-            res.json({ 
-                success: true, 
-                message: 'Data record created successfully',
-                record: newRecord
-            });
+            // Create the data record
+            const record = await dbHelpers.createDataRecord(name, aadhaar_number, srn, status);
+            
+            // Assign users if provided
+            if (assigned_users && assigned_users.length > 0) {
+                for (const userId of assigned_users) {
+                    await dbHelpers.assignRecordToUser(record.id, userId);
+                }
+            }
 
+            res.json({ success: true, record });
         } catch (error) {
             console.error('Error creating data record:', error);
-            res.status(500).json({ error: 'Failed to create data record' });
+            res.status(500).json({ success: false, error: 'Failed to create data record' });
         }
     },
 

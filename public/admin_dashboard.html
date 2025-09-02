@@ -278,7 +278,7 @@
             </div>
             
             <div class="form-actions">
-                <button class="btn" onclick="createUser()">Create User</button>
+                <button id="createUserBtn" class="btn">Create User</button>
             </div>
 
             <div class="table-container">
@@ -337,8 +337,8 @@
             </div>
             
             <div class="form-actions">
-                <button class="btn" onclick="createRecord()">Create Record</button>
-                <button class="btn btn-secondary" onclick="clearRecordForm()">Clear Form</button>
+                <button id="createRecordBtn" class="btn">Create Record</button>
+                <button id="clearFormBtn" class="btn btn-secondary">Clear Form</button>
             </div>
 
             <div class="table-container">
@@ -733,23 +733,20 @@
             document.getElementById('logoutBtn').addEventListener('click', logout);
 
             // Create user button event listener
-            const createUserBtn = document.querySelector('button[onclick="createUser()"]');
+            const createUserBtn = document.getElementById('createUserBtn');
             if (createUserBtn) {
-                createUserBtn.removeAttribute('onclick');
                 createUserBtn.addEventListener('click', createUser);
             }
 
             // Create record button event listener
-            const createRecordBtn = document.querySelector('button[onclick="createRecord()"]');
+            const createRecordBtn = document.getElementById('createRecordBtn');
             if (createRecordBtn) {
-                createRecordBtn.removeAttribute('onclick');
                 createRecordBtn.addEventListener('click', createRecord);
             }
 
             // Clear form button event listener
-            const clearFormBtn = document.querySelector('button[onclick="clearRecordForm()"]');
+            const clearFormBtn = document.getElementById('clearFormBtn');
             if (clearFormBtn) {
-                clearFormBtn.removeAttribute('onclick');
                 clearFormBtn.addEventListener('click', clearRecordForm);
             }
 

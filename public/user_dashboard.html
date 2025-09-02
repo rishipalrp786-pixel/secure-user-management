@@ -4,7 +4,154 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard - User Management System</title>
-    <link rel="stylesheet" href="./styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .dashboard-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dashboard-header h1 {
+            color: #333;
+            font-size: 24px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .tab-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .alert {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard-container" id="userDashboard">
@@ -42,6 +189,129 @@
         </div>
     </div>
 
-    <script src="./scripts.js"></script>
+    <script>
+        // User Dashboard JavaScript
+        let currentUser = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadUserData();
+            
+            // Logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+        });
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/check');
+                if (!response.ok) {
+                    window.location.href = '/';
+                    return;
+                }
+                const data = await response.json();
+                if (data.role !== 'user') {
+                    window.location.href = '/';
+                    return;
+                }
+                currentUser = data;
+                document.querySelector('.user-info span').textContent = `Welcome, ${data.username}`;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // Load user's assigned data records
+        async function loadUserData() {
+            try {
+                const response = await fetch('/api/data/user-records');
+                if (!response.ok) {
+                    throw new Error('Failed to load data');
+                }
+                const data = await response.json();
+                displayUserData(data.records || []);
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                showAlert('Failed to load your records', 'error');
+            }
+        }
+
+        // Display user data in table
+        function displayUserData(records) {
+            const tbody = document.getElementById('userDataTableBody');
+            tbody.innerHTML = '';
+
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #666;">No records assigned to you yet.</td></tr>';
+                return;
+            }
+
+            records.forEach((record, index) => {
+                const row = document.createElement('tr');
+                
+                const statusClass = record.status === 'approved' ? 'status-approved' : 
+                                  record.status === 'rejected' ? 'status-rejected' : 'status-pending';
+                
+                const receiptButton = record.receipt_filename ? 
+                    `<a href="/api/data/download/${record.id}" class="btn btn-secondary" target="_blank">Download</a>` : 
+                    '<span style="color: #666;">No receipt</span>';
+
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(record.name)}</td>
+                    <td>${escapeHtml(record.aadhaar_number)}</td>
+                    <td>${escapeHtml(record.srn)}</td>
+                    <td><span class="status-badge ${statusClass}">${record.status}</span></td>
+                    <td>${receiptButton}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    // Clear any local storage
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('isLoggedIn');
+                    // Redirect to login page
+                    window.location.href = '/';
+                } else {
+                    showAlert('Logout failed', 'error');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showAlert('Logout failed', 'error');
+            }
+        }
+
+        // Show alert messages
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alert-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertContainer.appendChild(alertDiv);
+            
+            // Remove alert after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 </html>

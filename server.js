@@ -81,7 +81,7 @@ app.get('/', (req, res) => {
 
 // Authentication routes
 app.post('/login', validateInput, authController.login);
-app.post('/logout', authController.logout);
+app.post('/api/auth/logout', authController.logout);
 app.get('/api/auth/check', authController.checkAuth);
 
 // Admin routes
@@ -89,13 +89,26 @@ app.get('/admin/dashboard', authenticateAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin_dashboard.html'));
 });
 
+// User management routes (accessible by admin)
+app.get('/api/users', authenticateAdmin, userController.getUsers);
+app.post('/api/users', authenticateAdmin, userController.createUser);
+app.delete('/api/users/:id', authenticateAdmin, userController.deleteUser);
+
+// Data management routes (accessible by admin)
+app.get('/api/data', authenticateAdmin, dataController.getAllData);
+app.post('/api/data', authenticateAdmin, dataController.createData);
+app.put('/api/data/:id', authenticateAdmin, dataController.updateData);
+app.delete('/api/data/:id', authenticateAdmin, dataController.deleteData);
+app.post('/api/data/:id/upload', authenticateAdmin, dataController.uploadReceipt);
+
+// Keep old admin routes for backward compatibility
 app.get('/api/admin/users', authenticateAdmin, userController.getUsers);
 app.post('/api/admin/users', authenticateAdmin, userController.createUser);
 app.delete('/api/admin/users/:id', authenticateAdmin, userController.deleteUser);
 
 app.get('/api/admin/data', authenticateAdmin, dataController.getAllData);
-app.post('/api/admin/data', authenticateAdmin, validateInput, dataController.createData);
-app.put('/api/admin/data/:id', authenticateAdmin, validateInput, dataController.updateData);
+app.post('/api/admin/data', authenticateAdmin, dataController.createData);
+app.put('/api/admin/data/:id', authenticateAdmin, dataController.updateData);
 app.delete('/api/admin/data/:id', authenticateAdmin, dataController.deleteData);
 app.post('/api/admin/data/:id/upload', authenticateAdmin, dataController.uploadReceipt);
 
@@ -104,6 +117,10 @@ app.get('/user/dashboard', authenticateUser, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'user_dashboard.html'));
 });
 
+app.get('/api/data/user-records', authenticateUser, dataController.getUserData);
+app.get('/api/data/download/:id', authenticateUser, dataController.downloadReceipt);
+
+// Keep old user routes for backward compatibility
 app.get('/api/user/data', authenticateUser, dataController.getUserData);
 app.get('/api/user/download/:filename', authenticateUser, dataController.downloadReceipt);
 
