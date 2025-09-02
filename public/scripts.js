@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (data.success) {
                     showAlert('Login successful! Redirecting...', 'success');
+                    // Store auth info in localStorage as backup
+                    localStorage.setItem('userRole', data.role);
+                    localStorage.setItem('isLoggedIn', 'true');
                     setTimeout(() => {
                         window.location.href = data.redirectUrl;
                     }, 1000);

@@ -27,6 +27,12 @@ const authController = {
             req.session.username = user.username;
             req.session.role = user.role;
 
+            console.log('Login - Setting session:', {
+                userId: user.id,
+                username: user.username,
+                role: user.role
+            });
+
             // Save session before responding
             req.session.save((err) => {
                 if (err) {
@@ -34,6 +40,8 @@ const authController = {
                     return res.status(500).json({ error: 'Session error' });
                 }
 
+                console.log('Login - Session saved successfully');
+                
                 // Redirect based on role
                 const redirectUrl = user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
                 

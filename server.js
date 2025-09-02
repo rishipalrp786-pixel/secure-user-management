@@ -16,6 +16,9 @@ const { validateInput } = require('./middleware/validation');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for Render.com
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
@@ -32,7 +35,9 @@ app.use(helmet({
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.'
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 app.use(limiter);
 
@@ -41,7 +46,9 @@ const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // limit each IP to 5 login requests per windowMs
     skipSuccessfulRequests: true,
-    message: 'Too many login attempts, please try again later.'
+    message: 'Too many login attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 
 // Middleware
@@ -75,6 +82,7 @@ app.get('/', (req, res) => {
 // Authentication routes
 app.post('/login', loginLimiter, validateInput, authController.login);
 app.post('/logout', authController.logout);
+app.get('/api/auth/check', authController.checkAuth);
 
 // Admin routes
 app.get('/admin/dashboard', authenticateAdmin, (req, res) => {
