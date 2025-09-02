@@ -27,14 +27,22 @@ const authController = {
             req.session.username = user.username;
             req.session.role = user.role;
 
-            // Redirect based on role
-            const redirectUrl = user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
-            
-            res.json({ 
-                success: true, 
-                message: 'Login successful',
-                role: user.role,
-                redirectUrl: redirectUrl
+            // Save session before responding
+            req.session.save((err) => {
+                if (err) {
+                    console.error('Session save error:', err);
+                    return res.status(500).json({ error: 'Session error' });
+                }
+
+                // Redirect based on role
+                const redirectUrl = user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
+                
+                res.json({ 
+                    success: true, 
+                    message: 'Login successful',
+                    role: user.role,
+                    redirectUrl: redirectUrl
+                });
             });
 
         } catch (error) {
