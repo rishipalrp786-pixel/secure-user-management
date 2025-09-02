@@ -31,25 +31,25 @@ app.use(helmet({
     },
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-app.use(limiter);
+// Rate limiting - Disabled temporarily for Render.com compatibility
+// const limiter = rateLimit({
+//     windowMs: 15 * 60 * 1000, // 15 minutes
+//     max: 100, // limit each IP to 100 requests per windowMs
+//     message: 'Too many requests from this IP, please try again later.',
+//     standardHeaders: true,
+//     legacyHeaders: false,
+// });
+// app.use(limiter);
 
-// Login rate limiting
-const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 login requests per windowMs
-    skipSuccessfulRequests: true,
-    message: 'Too many login attempts, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// Login rate limiting - Disabled temporarily
+// const loginLimiter = rateLimit({
+//     windowMs: 15 * 60 * 1000, // 15 minutes
+//     max: 5, // limit each IP to 5 login requests per windowMs
+//     skipSuccessfulRequests: true,
+//     message: 'Too many login attempts, please try again later.',
+//     standardHeaders: true,
+//     legacyHeaders: false,
+// });
 
 // Middleware
 app.use(express.json());
@@ -80,7 +80,7 @@ app.get('/', (req, res) => {
 });
 
 // Authentication routes
-app.post('/login', loginLimiter, validateInput, authController.login);
+app.post('/login', validateInput, authController.login);
 app.post('/logout', authController.logout);
 app.get('/api/auth/check', authController.checkAuth);
 
@@ -90,7 +90,7 @@ app.get('/admin/dashboard', authenticateAdmin, (req, res) => {
 });
 
 app.get('/api/admin/users', authenticateAdmin, userController.getUsers);
-app.post('/api/admin/users', authenticateAdmin, validateInput, userController.createUser);
+app.post('/api/admin/users', authenticateAdmin, userController.createUser);
 app.delete('/api/admin/users/:id', authenticateAdmin, userController.deleteUser);
 
 app.get('/api/admin/data', authenticateAdmin, dataController.getAllData);
