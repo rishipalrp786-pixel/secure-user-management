@@ -138,18 +138,18 @@
         }
         
         .status-pending {
-            background: #fff3cd;
-            color: #856404;
+            background: #ffc107;
+            color: #212529;
         }
         
         .status-approved {
-            background: #d4edda;
-            color: #155724;
+            background: #28a745;
+            color: white;
         }
         
         .status-rejected {
-            background: #f8d7da;
-            color: #721c24;
+            background: #dc3545;
+            color: white;
         }
     </style>
 </head>
@@ -255,8 +255,8 @@
                                   record.status === 'rejected' ? 'status-rejected' : 'status-pending';
                 
                 const receiptButton = record.receipt_filename ? 
-                    `<a href="/api/data/download/${record.id}" class="btn btn-secondary" target="_blank">Download</a>` : 
-                    '<span style="color: #666;">No receipt</span>';
+                    `<a href="/api/data/download/${record.id}" class="btn" style="background: #17a2b8; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 12px;" target="_blank">📄 Download Receipt</a>` : 
+                    'No Receipt';
 
                 row.innerHTML = `
                     <td>${index + 1}</td>

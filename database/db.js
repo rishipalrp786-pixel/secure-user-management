@@ -145,13 +145,13 @@ const dbHelpers = {
         });
     },
 
-    createDataRecord: (name, aadhaarNumber, srn, status = 'Pending') => {
+    createDataRecord: (name, aadhaarNumber, srn, status = 'Pending', receiptFilename = null) => {
         return new Promise((resolve, reject) => {
-            db.run('INSERT INTO data_records (name, aadhaar_number, srn, status) VALUES (?, ?, ?, ?)',
-                [name, aadhaarNumber, srn, status],
+            db.run('INSERT INTO data_records (name, aadhaar_number, srn, status, receipt_filename) VALUES (?, ?, ?, ?, ?)',
+                [name, aadhaarNumber, srn, status, receiptFilename],
                 function(err) {
                     if (err) reject(err);
-                    else resolve({ id: this.lastID, name, aadhaar_number: aadhaarNumber, srn, status });
+                    else resolve({ id: this.lastID, name, aadhaar_number: aadhaarNumber, srn, status, receipt_filename: receiptFilename });
                 }
             );
         });

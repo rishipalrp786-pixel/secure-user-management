@@ -55,20 +55,45 @@ const dataController = {
 
     createData: async (req, res) => {
         try {
-            const { name, aadhaar_number, srn, status = 'Pending', assigned_users = [] } = req.body;
+            console.log('Request body:', req.body);
+            console.log('Request file:', req.file);
+            
+            let { name, aadhaar_number, srn, status = 'Pending', assigned_users = [] } = req.body;
+            
+            // Handle FormData from file upload
+            if (req.body.assigned_users && typeof req.body.assigned_users === 'string') {
+                try {
+                    assigned_users = JSON.parse(req.body.assigned_users);
+                } catch (parseError) {
+                    console.error('Error parsing assigned_users:', parseError);
+                    assigned_users = [];
+                }
+            }
+            
+            console.log('Parsed data:', { name, aadhaar_number, srn, status, assigned_users });
             
             if (!name || !aadhaar_number || !srn) {
+                console.log('Missing required fields:', { name: !!name, aadhaar_number: !!aadhaar_number, srn: !!srn });
                 return res.status(400).json({ success: false, error: 'Name, Aadhaar number, and SRN are required' });
             }
 
+            // Handle file upload
+            let receiptFilename = null;
+            if (req.file) {
+                receiptFilename = req.file.filename;
+                console.log('Receipt uploaded:', receiptFilename);
+            }
+
             // Create the data record
-            const record = await dbHelpers.createDataRecord(name, aadhaar_number, srn, status);
+            const record = await dbHelpers.createDataRecord(name, aadhaar_number, srn, status, receiptFilename);
+            console.log('Record created:', record);
             
             // Assign users if provided
             if (assigned_users && assigned_users.length > 0) {
                 for (const userId of assigned_users) {
                     await dbHelpers.assignRecordToUser(record.id, userId);
                 }
+                console.log('Users assigned:', assigned_users);
             }
 
             res.json({ success: true, record });
@@ -219,35 +244,35 @@ const dataController = {
 
     downloadReceipt: async (req, res) => {
         try {
-            const { filename } = req.params;
+            const recordId = req.params.id;
             const userId = req.session.userId;
             const userRole = req.session.role;
 
-            // Validate filename
-            if (!filename || filename.includes('..') || filename.includes('/')) {
-                return res.status(400).json({ error: 'Invalid filename' });
+            // Get the record to find the receipt filename
+            const record = await dbHelpers.getDataRecordById(recordId);
+            if (!record || !record.receipt_filename) {
+                return res.status(404).json({ error: 'Receipt not found' });
             }
 
-            const filePath = path.join(__dirname, '..', 'uploads', 'receipts', filename);
-
-            // Check if file exists
-            if (!fs.existsSync(filePath)) {
-                return res.status(404).json({ error: 'File not found' });
-            }
-
-            // For non-admin users, check if they have access to this file
+            // For non-admin users, check if they have access to this record
             if (userRole !== 'admin') {
-                // Find the record with this filename
-                const records = await dbHelpers.getUserDataRecords(userId);
-                const hasAccess = records.some(record => record.receipt_filename === filename);
+                const userRecords = await dbHelpers.getUserDataRecords(userId);
+                const hasAccess = userRecords.some(r => r.id == recordId);
                 
                 if (!hasAccess) {
                     return res.status(403).json({ error: 'Access denied' });
                 }
             }
 
+            const filePath = path.join(__dirname, '..', 'uploads', 'receipts', record.receipt_filename);
+
+            // Check if file exists
+            if (!fs.existsSync(filePath)) {
+                return res.status(404).json({ error: 'File not found' });
+            }
+
             // Send file
-            res.download(filePath, (err) => {
+            res.download(filePath, record.receipt_filename, (err) => {
                 if (err) {
                     console.error('Error downloading file:', err);
                     res.status(500).json({ error: 'Failed to download file' });

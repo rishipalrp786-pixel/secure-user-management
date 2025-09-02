@@ -97,10 +97,11 @@ app.delete('/api/users/:id', authenticateAdmin, userController.deleteUser);
 
 // Data management routes (accessible by admin)
 app.get('/api/data', authenticateAdmin, dataController.getAllData);
-app.post('/api/data', authenticateAdmin, dataController.createData);
+app.post('/api/data', authenticateAdmin, upload.single('receipt'), dataController.createData);
 app.put('/api/data/:id', authenticateAdmin, dataController.updateData);
 app.delete('/api/data/:id', authenticateAdmin, dataController.deleteData);
 app.post('/api/data/:id/upload', authenticateAdmin, dataController.uploadReceipt);
+app.get('/api/data/download/:id', dataController.downloadReceipt);
 
 // Keep old admin routes for backward compatibility
 app.get('/api/admin/users', authenticateAdmin, userController.getUsers);

@@ -211,19 +211,18 @@
             border: 1px solid #f5c6cb;
         }
         
-        .multi-select {
+        select[multiple] {
             border: 2px solid #e1e5e9;
             border-radius: 8px;
-            max-height: 150px;
-            overflow-y: auto;
+            height: 120px;
             padding: 10px;
             width: 100%;
+            font-size: 14px;
         }
         
-        .multi-select label {
-            display: block;
-            padding: 5px 0;
-            cursor: pointer;
+        select[multiple]:focus {
+            outline: none;
+            border-color: #667eea;
         }
     </style>
 </head>
@@ -312,10 +311,15 @@
             </div>
 
             <div class="form-group">
-                <label>Assign Access to Users:</label>
-                <div id="userAccess" class="multi-select">
+                <label for="userAccess">Assign Access to Users:</label>
+                <select id="userAccess" multiple>
                     <!-- Users will be loaded here -->
-                </div>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="receiptFile">Upload Receipt (PDF/JPEG):</label>
+                <input type="file" id="receiptFile" accept=".pdf,.jpg,.jpeg,.png" style="width: 100%; padding: 10px; border: 2px solid #e1e5e9; border-radius: 8px;">
             </div>
             
             <div class="form-actions">
@@ -577,13 +581,31 @@
                 const row = document.createElement('tr');
                 const assignedUsers = record.assignedUsers ? record.assignedUsers.map(u => u.username).join(', ') : 'None';
                 
+                // Status badge with colors
+                let statusClass = '';
+                let statusColor = '';
+                if (record.status.toLowerCase() === 'pending') {
+                    statusClass = 'status-pending';
+                    statusColor = 'background: #ffc107; color: #212529;';
+                } else if (record.status.toLowerCase() === 'approved') {
+                    statusClass = 'status-approved';
+                    statusColor = 'background: #28a745; color: white;';
+                } else if (record.status.toLowerCase() === 'rejected') {
+                    statusClass = 'status-rejected';
+                    statusColor = 'background: #dc3545; color: white;';
+                }
+                
+                const receiptColumn = record.receipt_filename ? 
+                    `<a href="/api/data/download/${record.id}" class="btn btn-sm" style="background: #17a2b8; color: white; text-decoration: none; padding: 4px 8px; border-radius: 4px;" target="_blank">Download</a>` : 
+                    'No Receipt';
+                
                 row.innerHTML = `
                     <td>${record.id}</td>
                     <td>${record.name}</td>
                     <td>${record.aadhaar_number}</td>
                     <td>${record.srn}</td>
-                    <td>${record.status}</td>
-                    <td>${record.receipt_filename ? 'Yes' : 'No'}</td>
+                    <td><span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; ${statusColor}">${record.status}</span></td>
+                    <td>${receiptColumn}</td>
                     <td>${assignedUsers}</td>
                     <td>
                         <button class="btn btn-danger btn-sm" onclick="deleteRecord(${record.id})">Delete</button>
@@ -599,6 +621,7 @@
             const aadhaar = document.getElementById('recordAadhaar').value.trim();
             const srn = document.getElementById('recordSrn').value.trim();
             const status = document.getElementById('recordStatus').value;
+            const receiptFile = document.getElementById('receiptFile').files[0];
             
             console.log('Record data:', { name, aadhaar, srn, status });
             
@@ -607,20 +630,17 @@
                 return;
             }
             
-            // Create demo record for testing
-            if (name === 'demo') {
-                showAlert('Demo record created successfully!', 'success');
-                clearRecordForm();
-                
-                // Add demo record to table
+            // Demo mode - create a demo record without API call
+            if (name.toLowerCase() === 'demo') {
+                console.log('Creating demo record...');
                 const tbody = document.getElementById('dataTableBody');
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>999</td>
-                    <td>Demo User</td>
+                    <td>Demo Record</td>
                     <td>123456789012</td>
                     <td>DEMO001</td>
-                    <td>Pending</td>
+                    <td><span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #ffc107; color: #212529;">Pending</span></td>
                     <td>No</td>
                     <td>None</td>
                     <td>
@@ -631,28 +651,41 @@
                 return;
             }
             
-            const selectedUsers = Array.from(document.querySelectorAll('#userAccess input:checked')).map(cb => parseInt(cb.value));
+            const selectedUsers = Array.from(document.getElementById('userAccess').selectedOptions).map(option => parseInt(option.value)).filter(id => !isNaN(id));
             
             try {
                 console.log('Sending API request to create record...');
+                
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('aadhaar_number', aadhaar);
+                formData.append('srn', srn);
+                formData.append('status', status);
+                formData.append('assigned_users', JSON.stringify(selectedUsers));
+                
+                console.log('FormData contents:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
+                
+                if (receiptFile) {
+                    formData.append('receipt', receiptFile);
+                }
+                
                 const response = await fetch('/api/data', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name, aadhaar_number: aadhaar, srn, status, assigned_users: selectedUsers
-                    })
+                    body: formData
                 });
                 
-                console.log('API response status:', response.status);
                 const data = await response.json();
-                console.log('API response data:', data);
+                console.log('API response:', data);
                 
                 if (data.success) {
-                    showAlert('Record created successfully!', 'success');
+                    showAlert('Record created successfully!');
                     clearRecordForm();
-                    loadData();
+                    loadData(); // Refresh the data table
                 } else {
-                    showAlert(data.error || 'Failed to create record');
+                    showAlert('Error: ' + (data.error || 'Failed to create record'));
                 }
             } catch (error) {
                 console.error('Error creating record:', error);
@@ -665,7 +698,8 @@
             document.getElementById('recordAadhaar').value = '';
             document.getElementById('recordSrn').value = '';
             document.getElementById('recordStatus').value = 'Pending';
-            document.querySelectorAll('#userAccess input:checked').forEach(cb => cb.checked = false);
+            document.getElementById('userAccess').selectedIndex = -1;
+            document.getElementById('receiptFile').value = '';
         }
 
         async function deleteRecord(recordId) {
@@ -696,13 +730,14 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const container = document.getElementById('userAccess');
-                    container.innerHTML = '';
+                    const select = document.getElementById('userAccess');
+                    select.innerHTML = '<option value="">Select users...</option>';
                     data.users.forEach(user => {
                         if (user.role === 'user') {
-                            const label = document.createElement('label');
-                            label.innerHTML = `<input type="checkbox" value="${user.id}"> ${user.username}`;
-                            container.appendChild(label);
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = user.username;
+                            select.appendChild(option);
                         }
                     });
                 }
