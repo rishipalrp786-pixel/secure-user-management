@@ -213,6 +213,18 @@ const dbHelpers = {
         });
     },
 
+    assignRecordToUser: (recordId, userId) => {
+        return new Promise((resolve, reject) => {
+            db.run('INSERT OR IGNORE INTO user_access (user_id, record_id) VALUES (?, ?)',
+                [userId, recordId],
+                function(err) {
+                    if (err) reject(err);
+                    else resolve(true);
+                }
+            );
+        });
+    },
+
     assignRecordToUsers: (recordId, userIds) => {
         return new Promise((resolve, reject) => {
             // First, remove existing assignments
